@@ -2,10 +2,16 @@ package com.zjq.androidpermissionstest;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 
 /**
  * 自Android 6.0起需要动态获取权限的工具类
@@ -17,16 +23,23 @@ import android.support.v4.content.ContextCompat;
  * Modified by softwater on 16/9/8.
  */
 public class PermissionUtil {
+  // ==================onRequestPermissionsResult========================
 /*
 @Override public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
- @NonNull int[] grantResults) {
- super.onRequestPermissionsResult(requestCode, permissions, grantResults);
- if (requestCode == PermissionUtil.RequestPermissionCode.CAMERA && permissions[0].equals(
- Manifest.permission.CAMERA) && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
- startActionImageCapture();
- }
- }
+      @NonNull int[] grantResults) {
+    switch (requestCode) {
+      case PermissionUtil.RequestPermissionCode.CALL: {
+        // If request is cancelled, the result arrays are empty.
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          startActivity(mCallPhoneIntent);
+        } else {
+          Toast.makeText(this, "用户取消授权", Toast.LENGTH_LONG).show();
+        }
+      }
+    }
+  }
  */
+  // ==================onRequestPermissionsResult========================
 
   /**
    * 请求权限的请求码
@@ -70,5 +83,87 @@ public class PermissionUtil {
   public static void requestPermission(Activity activity, String permission, int requestCode) {
     // Permission has not been granted yet. Request it directly.
     ActivityCompat.requestPermissions(activity, new String[] { permission }, requestCode);
+  }
+
+  /**
+   * 启动需要权限的activity
+   *
+   * @param activity Activity
+   * @param intent Intent
+   * @param permission {@link Manifest.permission}字段
+   * @param requestPermissionCode 请求权限的code
+   * @param dialog {@link Dialog}
+   */
+  public static void startActivityWithPermisssions(@NonNull final Activity activity,
+      @NonNull final Intent intent, @NonNull final String permission,
+      @NonNull final int requestPermissionCode, @Nullable Dialog dialog) {
+    if (checkSelfPermission(activity, permission)) {
+      activity.startActivity(intent);
+    } else {
+      if (shouldShowRequestPermissionRationale(activity, permission)) {
+        if (dialog == null) {
+          new AlertDialog.Builder(activity).setTitle("说明")
+              .setMessage("需要 " + permission + " 权限，以获得更好的体验。")
+              .setPositiveButton("同意", new DialogInterface.OnClickListener() {
+                @Override public void onClick(DialogInterface dialog, int which) {
+                  dialog.dismiss();
+                  requestPermission(activity, permission, requestPermissionCode);
+                }
+              })
+              .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                @Override public void onClick(DialogInterface dialog, int which) {
+                  dialog.dismiss();
+                }
+              })
+              .show();
+        } else {
+          dialog.show();
+        }
+      } else {
+        requestPermission(activity, permission, requestPermissionCode);
+      }
+    }
+  }
+
+  /**
+   * 启动需要权限的activity，并且返回数据
+   *
+   * @param activity Activity
+   * @param intent Intent
+   * @param requestActivityCode 打开activity的请求码
+   * @param permission {@link Manifest.permission}字段
+   * @param requestPermissionCode {@link RequestPermissionCode}字段，权限请求码
+   * @param dialog {@link Dialog}
+   */
+  public static void startActivityForResultWithPermisssions(@NonNull final Activity activity,
+      @NonNull final Intent intent, @NonNull final int requestActivityCode,
+      @NonNull final String permission, @NonNull final int requestPermissionCode,
+      @Nullable Dialog dialog) {
+    if (checkSelfPermission(activity, permission)) {
+      activity.startActivityForResult(intent, requestActivityCode);
+    } else {
+      if (shouldShowRequestPermissionRationale(activity, permission)) {
+        if (dialog == null) {
+          new AlertDialog.Builder(activity).setTitle("说明")
+              .setMessage("需要 " + permission + " 权限，以获得更好的体验。")
+              .setPositiveButton("同意", new DialogInterface.OnClickListener() {
+                @Override public void onClick(DialogInterface dialog, int which) {
+                  dialog.dismiss();
+                  requestPermission(activity, permission, requestPermissionCode);
+                }
+              })
+              .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                @Override public void onClick(DialogInterface dialog, int which) {
+                  dialog.dismiss();
+                }
+              })
+              .show();
+        } else {
+          dialog.show();
+        }
+      } else {
+        requestPermission(activity, permission, requestPermissionCode);
+      }
+    }
   }
 }
